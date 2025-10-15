@@ -71,7 +71,7 @@ Build a **School Equipment Lending Portal** for managing equipment requests, app
 | --------------------------- | ------------------------------------------------------ | ------------------------------------------ |
 | **Frontend**                | React + TailwindCSS                                    | UI, routing, API integration               |
 | **Backend**                 | Spring Boot (Java 21)                                  | REST API, business logic                   |
-| **Database**                | PostgreSQL                                             | Relational DB, transactions, AWS RDS ready |
+| **Database**                | MySQL                                             | Relational DB, transactions, AWS RDS ready |
 | **Authentication**          | Spring Security + JWT + OAuth2 (Google login optional) | Secure access                              |
 | **Messaging**               | RabbitMQ / Kafka                                       | Notifications, async updates               |
 | **Resilience**              | Resilience4J + Saga Pattern                            | Fault tolerance                            |
@@ -103,7 +103,7 @@ Deployed on **AWS**, monitored via **Prometheus + Grafana**
 
 ---
 
-## 🗃️ Step 4 — Draft Database Schema (ERD Overview)
+## 🗃️ Step 4 — Database Schema (ERD Overview)
 
 **Entities:**
 
@@ -150,21 +150,3 @@ Deployed on **AWS**, monitored via **Prometheus + Grafana**
 
 ---
 
-## 🧭 Step 5 — Next Action (for You)
-
-Let’s proceed collaboratively.
-Please complete this step 👇:
-
-👉 **Your Action:**
-Propose your version of **architecture** and **ERD** — just describe:
-
-1. Any extra modules you want (e.g., DamageLog, Analytics)
-2. Any change in database entities or relationships (e.g., include EquipmentCategory separately)
-3. Whether you want to use **Kafka** or **RabbitMQ** for async messaging.
-
-Once you describe your design choice, I’ll refine it, improve schema relationships, and generate:
-
-* ✅ A polished **architecture diagram (UML)**
-* ✅ A clear **ERD diagram (visual)**
-
-Would you like me to include **due date tracking** (auto overdue detection) in the design too?
