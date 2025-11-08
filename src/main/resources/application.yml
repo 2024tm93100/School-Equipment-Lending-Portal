@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: school-lending
+  # H2 settings are now the default when no profile is active
+  datasource:
+    url: jdbc:h2:mem:equipment_lending;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driverClassName: org.h2.Driver
+    username: sa
+    password: 
+  jpa:
+    hibernate:
+      ddl-auto: create-drop 
+    database-platform: org.hibernate.dialect.H2Dialect
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: school-lending-app
+            client-secret: fwmwWKhbABlteAWuH8Tdjc44errmZl3k
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/keycloak"
+            scope: openid, profile, email
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8081/realms/school
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8081/realms/school
+
+# H2 settings are now the default when no profile is active
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  logging:
+    level:
+      org.springframework.security: DEBUG
+      org.springframework.web.client.RestTemplate: DEBUG
