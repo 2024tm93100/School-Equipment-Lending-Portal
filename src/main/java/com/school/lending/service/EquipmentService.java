@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.school.lending.dto.EquipmentDto;
 import com.school.lending.exception.ConflictException;
 import com.school.lending.exception.DuplicateResourceException;
 import com.school.lending.exception.InvalidInputException;
@@ -18,10 +19,10 @@ import jakarta.validation.Valid;
 @Service
 public class EquipmentService {
 
-	private EquipmentRepository equipmentRepository;
+	private final EquipmentRepository equipmentRepository;
 
-	public EquipmentService() {
-
+	public EquipmentService(EquipmentRepository equipmentRepository) {
+		this.equipmentRepository = equipmentRepository;
 	}
 
 	public List<Equipment> getAll() {
@@ -33,38 +34,39 @@ public class EquipmentService {
 		return equipmentRepository.findById(id);
 	}
 
-	public Equipment createEquipment(Equipment equipment) {
-		if (equipment.getTotalQuantity() < 0) {
+	public Equipment createEquipment(@Valid EquipmentDto equipment) {
+		int totalQuantity = equipment.totalQuantity();
+		if (totalQuantity < 0) {
 			// Correct Error Handling: Throw a 400-mapped exception (InvalidInputException)
 			throw new InvalidInputException("Initial quantity cannot be negative.");
 		}
-
+		String name = equipment.name();
 		// Issue 1 Fix: Pass the name (String) to the repository method
-		if (equipmentRepository.findByName(equipment.getName()).isPresent()) {
+		if (equipmentRepository.findByName(name).isPresent()) {
 			// Correct Error Handling: Throw a 409-mapped exception
 			// (DuplicateResourceException)
 			throw new DuplicateResourceException("Equipment with this name already exists.");
 		}
-		equipment.setBorrowedCount(0);
-		equipment.setAvailableQuantity(equipment.getTotalQuantity());
-		// If all checks pass, save the equipment
-		return equipmentRepository.save(equipment);
+		Equipment newEquipment = Equipment.builder().totalQuantity(totalQuantity).borrowedCount(0)
+				.availableQuantity(totalQuantity).name(name).category(equipment.category())
+				.condition(equipment.condition()).build();
+		return equipmentRepository.save(newEquipment);
 	}
 
-	public Equipment updateEquipment(Long id, @Valid Equipment equipment) {
+	public Equipment updateEquipment(Long id, @Valid EquipmentDto equipment) {
 		Equipment existingEquipment = equipmentRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Equipment not found."));
 		int currentBorrowed = existingEquipment.getBorrowedCount();
-		int newTotalQuantity = equipment.getTotalQuantity();
+		int newTotalQuantity = equipment.totalQuantity();
 		// CRITICAL VALIDATION: Check if the new total stock is less than the borrowed
 		// count.
 		if (newTotalQuantity < currentBorrowed) {
 			throw new InvalidInputException("New total quantity (" + newTotalQuantity
 					+ ") cannot be less than the number of items currently borrowed (" + currentBorrowed + ").");
 		}
-		existingEquipment.setName(equipment.getName());
-		existingEquipment.setCategory(equipment.getCategory());
-		existingEquipment.setCondition(equipment.getCondition());
+		existingEquipment.setName(equipment.name());
+		existingEquipment.setCategory(equipment.category());
+		existingEquipment.setCondition(equipment.condition());
 		existingEquipment.setTotalQuantity(newTotalQuantity);
 		existingEquipment.setAvailableQuantity(newTotalQuantity - currentBorrowed);
 		return equipmentRepository.save(existingEquipment);

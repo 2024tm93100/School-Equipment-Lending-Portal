@@ -42,13 +42,13 @@ public class UserController {
 				jwt.getClaimAsString("preferred_username"), "claims", jwt.getClaims());
 	}
 
-	@PostMapping("/token")
+	@PostMapping("/auth/token")
 	public ResponseEntity<Map<String, Object>> getToken(@RequestBody LoginRequest request) {
 		Map<String, Object> token = keycloakAuthService.getToken(request.username(), request.password());
 		return ResponseEntity.ok(token);
 	}
 
-	@PostMapping("/register")
+	@PostMapping("/auth/register")
 	public ResponseEntity<Object> registerUser(@RequestBody RegisterRequest request) {
 		try {
 			// 1. Create the user in Keycloak

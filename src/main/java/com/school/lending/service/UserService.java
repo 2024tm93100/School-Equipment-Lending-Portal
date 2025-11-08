@@ -1,5 +1,7 @@
 package com.school.lending.service;
 
+import java.util.Optional;
+
 import org.springframework.stereotype.Service;
 
 import com.school.lending.dto.RegisterRequest;
@@ -9,7 +11,7 @@ import com.school.lending.repository.UserRepository;
 
 @Service
 public class UserService {
-	private UserRepository userRepository;
+	private final UserRepository userRepository;
 
 	public UserService(UserRepository userRepository) {
 		this.userRepository = userRepository;
@@ -27,6 +29,10 @@ public class UserService {
 			throw new IllegalArgumentException("Invalid role specified: " + request.role());
 		}
 		return userRepository.save(newUser);
+	}
+
+	public Optional<User> getUserById(Long userId) {
+		return userRepository.findById(userId);
 	}
 
 }

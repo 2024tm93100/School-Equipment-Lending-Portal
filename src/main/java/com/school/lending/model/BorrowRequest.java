@@ -25,6 +25,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class BorrowRequest {
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long requestId;
@@ -52,4 +53,68 @@ public class BorrowRequest {
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private RequestStatus status; // PENDING, APPROVED, REJECTED, RETURNED
+
+	public Long getRequestId() {
+		return requestId;
+	}
+
+	public void setRequestId(Long requestId) {
+		this.requestId = requestId;
+	}
+
+	public User getUser() {
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
+
+	public Equipment getEquipment() {
+		return equipment;
+	}
+
+	public void setEquipment(Equipment equipment) {
+		this.equipment = equipment;
+	}
+
+	public int getRequestedQuantity() {
+		return requestedQuantity;
+	}
+
+	public void setRequestedQuantity(int requestedQuantity) {
+		this.requestedQuantity = requestedQuantity;
+	}
+
+	public LocalDate getRequestDate() {
+		return requestDate;
+	}
+
+	public void setRequestDate(LocalDate requestDate) {
+		this.requestDate = requestDate;
+	}
+
+	public LocalDate getStartDate() {
+		return startDate;
+	}
+
+	public void setStartDate(LocalDate startDate) {
+		this.startDate = startDate;
+	}
+
+	public LocalDate getEndDate() {
+		return endDate;
+	}
+
+	public void setEndDate(LocalDate endDate) {
+		this.endDate = endDate;
+	}
+
+	public RequestStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(RequestStatus status) {
+		this.status = status;
+	}
 }

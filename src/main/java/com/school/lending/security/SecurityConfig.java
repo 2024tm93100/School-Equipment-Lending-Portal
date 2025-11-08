@@ -29,8 +29,9 @@ public class SecurityConfig {
 				// 🔹 Authorization rules
 				.authorizeHttpRequests(auth -> auth
 						// Allow public pages and H2 console
-						.requestMatchers("/", "/error", "/public/**", "/h2-console/**", "/swagger-ui/**", "/v3/**")
-						.permitAll().requestMatchers("/api/register", "/api/token").permitAll()
+						.requestMatchers("/", "/error", "/public/**", "/h2-console/**", "/v3/api-docs/**",
+								"/swagger-ui/**", "/swagger-ui.html")
+						.permitAll().requestMatchers("/api/auth/**").permitAll()
 						// Role-based API restrictions
 						.requestMatchers("/api/admin/**").hasRole("ADMIN").requestMatchers("/api/staff/**")
 						.hasAnyRole("STAFF", "ADMIN").requestMatchers("/api/student/**")

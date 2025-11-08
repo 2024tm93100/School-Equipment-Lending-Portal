@@ -3,6 +3,7 @@ package com.school.lending.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.school.lending.dto.EquipmentDto;
 import com.school.lending.exception.ResourceNotFoundException;
 import com.school.lending.model.Equipment;
 import com.school.lending.service.EquipmentService;
@@ -29,6 +31,7 @@ public class EquipmentController {
 	}
 
 	@GetMapping("/equipment")
+	@PreAuthorize("hasAnyRole('STUDENT', 'STAFF', 'ADMIN')")
 	public ResponseEntity<List<Equipment>> getAllEquipment() {
 		List<Equipment> equipmentList = equipmentService.getAll();
 		if (equipmentList.isEmpty()) {
@@ -38,6 +41,7 @@ public class EquipmentController {
 	}
 
 	@GetMapping("/equipment/{id}")
+	@PreAuthorize("hasAnyRole('STUDENT', 'STAFF', 'ADMIN')")
 	public ResponseEntity<Equipment> getEquipmentById(@PathVariable Long id) {
 		Equipment equipment = equipmentService.getEquipmentById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + id));
@@ -45,18 +49,22 @@ public class EquipmentController {
 	}
 
 	@PostMapping("/equipment")
-	public ResponseEntity<Equipment> createNewEquipment(@RequestBody @Valid Equipment newEquipment) {
+	@PreAuthorize("hasAnyRole('ADMIN')")
+	public ResponseEntity<Equipment> createNewEquipment(@RequestBody @Valid EquipmentDto newEquipment) {
 		Equipment createdEquipment = equipmentService.createEquipment(newEquipment);
 		return ResponseEntity.created(null).body(createdEquipment);
 	}
 
 	@PutMapping("/equipment/{id}")
-	public ResponseEntity<Equipment> updateEquipment(@PathVariable Long id, @RequestBody @Valid Equipment equipment) {
+	@PreAuthorize("hasAnyRole('ADMIN')")
+	public ResponseEntity<Equipment> updateEquipment(@PathVariable Long id,
+			@RequestBody @Valid EquipmentDto equipment) {
 		Equipment updatedEquipment = equipmentService.updateEquipment(id, equipment);
 		return ResponseEntity.ok(updatedEquipment);
 	}
 
-	@GetMapping("/api/equipment/search")
+	@GetMapping("/equipment/search")
+	@PreAuthorize("hasAnyRole('STUDENT', 'STAFF', 'ADMIN')")
 	public ResponseEntity<List<Equipment>> searchEquipmentByCategory(
 			@RequestParam(value = "category") String categoryName) {
 
@@ -67,6 +75,7 @@ public class EquipmentController {
 	}
 
 	@DeleteMapping("/equipment/{id}")
+	@PreAuthorize("hasAnyRole('ADMIN')")
 	public ResponseEntity<Void> deleteEquipment(@PathVariable Long id) {
 
 		// The service layer handles:
@@ -79,6 +88,7 @@ public class EquipmentController {
 	}
 
 	@GetMapping("/equipment/available")
+	@PreAuthorize("hasAnyRole('STUDENT', 'STAFF', 'ADMIN')")
 	public ResponseEntity<List<Equipment>> getAvailableEquipment() {
 
 		// The service layer handles filtering and calculating available quantity.
