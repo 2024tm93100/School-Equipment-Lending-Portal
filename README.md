@@ -1,15 +1,6 @@
 # School-Equipment-Lending-Portal
 A web-based platform to efficiently manage and track the borrowing, approval, issuing, and return of shared school assets (e.g., sports kits, lab equipment, musical instruments) for students and staff.
 
-Excellent approach 👏 — you’re now focusing on **Task 1 (Oct 16–17)**:
-
-> ✅ **Read assignment → summarize use cases**
-> ✅ **Finalize architecture diagram, tech stack, and DB schema (ERD + relationships)**
-
-We’ll go step-by-step.
-
----
-
 ## 🧩 Step 1 — Summary of the Assignment (Functional + Non-functional)
 
 ### 🎯 **Objective**
