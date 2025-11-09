@@ -13,8 +13,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.school.lending.dto.LoginRequest;
 import com.school.lending.dto.RegisterRequest;
+import com.school.lending.dto.TokenRefreshRequest;
+import com.school.lending.dto.TokenRefreshResponse;
 import com.school.lending.service.KeycloakUserService;
 import com.school.lending.service.UserService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api")
@@ -42,10 +46,27 @@ public class UserController {
 				jwt.getClaimAsString("preferred_username"), "claims", jwt.getClaims());
 	}
 
-	@PostMapping("/auth/token")
-	public ResponseEntity<Map<String, Object>> getToken(@RequestBody LoginRequest request) {
+	@PostMapping("/auth/login")
+	public ResponseEntity<Map<String, Object>> autheticateUser(@RequestBody LoginRequest request) {
 		Map<String, Object> token = keycloakAuthService.getToken(request.username(), request.password());
 		return ResponseEntity.ok(token);
+	}
+
+	@PostMapping("/auth/refresh")
+	public ResponseEntity<TokenRefreshResponse> refreshToken(@Valid @RequestBody TokenRefreshRequest request) {
+		String requestRefreshToken = request.refreshToken();
+
+		Map<String, Object> tokenMap = keycloakAuthService.refreshToken(requestRefreshToken);
+
+		String newAccessToken = (String) tokenMap.get("access_token");
+		String newRefreshToken = (String) tokenMap.get("refresh_token");
+
+		// Keycloak returns these as Long/Integer. We cast them to Long.
+		Long newExpiresIn = ((Number) tokenMap.get("expires_in")).longValue();
+		Long newRefreshExpiresIn = ((Number) tokenMap.get("refresh_expires_in")).longValue();
+
+		return ResponseEntity
+				.ok(new TokenRefreshResponse(newAccessToken, newRefreshToken, newExpiresIn, newRefreshExpiresIn));
 	}
 
 	@PostMapping("/auth/register")

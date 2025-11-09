@@ -5,7 +5,8 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/equipment_lending
     username: postgres
-    password: 
+    password:
+    driverClassName: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
