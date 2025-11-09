@@ -40,6 +40,7 @@ Eclipse Project Files
 .classpath
 .settings/
 .factorypath
+keycloak-data/
 
 Eclipse-generated binaries (often redundant with Maven's target)
 
@@ -72,8 +73,6 @@ H2 Database files (crucial to exclude if you use H2 for local testing)
 
 *.mv.db
 *.trace.db
-
-keycloak-data/
 
 Configuration for local secrets:
 
