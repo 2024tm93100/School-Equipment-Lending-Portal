@@ -1,8 +1,11 @@
 package com.school.lending.exception;
 
+import java.time.Instant;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
@@ -65,6 +68,24 @@ public class GlobalExceptionHandler {
 		// Maps the exception to an HTTP 409 Conflict response
 		ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
 		problemDetail.setTitle("Conflict");
+
+		return problemDetail;
+	}
+
+	/**
+	 * Handles AuthenticationException, typically thrown when credentials are
+	 * invalid or tokens are expired/invalid. Returns HTTP 401 Unauthorized.
+	 */
+	@ExceptionHandler(AuthenticationException.class)
+	@ResponseStatus(HttpStatus.UNAUTHORIZED) // Sets the HTTP status code
+	public ProblemDetail handleAuthenticationException(AuthenticationException ex) {
+
+		// Use ProblemDetail for a standardized, RFC 7807 compliant error response
+		ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+
+		problemDetail.setTitle("Authentication Failed");
+		problemDetail.setType(java.net.URI.create("/errors/unauthorized"));
+		problemDetail.setProperty("timestamp", Instant.now());
 
 		return problemDetail;
 	}

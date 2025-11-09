@@ -19,7 +19,8 @@ public class UserService {
 
 	public User registerUserLocally(RegisterRequest request) {
 		User newUser = new User();
-		newUser.setName(request.username());
+		newUser.setFirstName(request.firstName());
+		newUser.setLastName(request.lastName());
 		newUser.setEmail(request.email());
 		try {
 			Role roleEnum = Role.valueOf(request.role().toUpperCase());
@@ -35,4 +36,8 @@ public class UserService {
 		return userRepository.findById(userId);
 	}
 
+
+	public Optional<User> getUserByEmail(String email) {
+		return userRepository.findByEmail(email);
+	}
 }

@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,10 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.school.lending.dto.RegisterRequest;
+import com.school.lending.exception.AuthenticationException;
 
 @Service
 public class KeycloakUserService {
@@ -31,13 +35,18 @@ public class KeycloakUserService {
 	@Value("${spring.security.oauth2.client.registration.keycloak.client-secret}")
 	private String clientSecret;
 
+	private final ObjectMapper objectMapper;
+
+	public KeycloakUserService(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+	}
+
 	public Map<String, Object> getToken(String username, String password) {
 		String tokenUrl = keycloakServerUrl + "/realms/" + realm + "/protocol/openid-connect/token";
-		RestTemplate restTemplate = new RestTemplate();
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
+		RestTemplate restTemplate = new RestTemplate();
 		MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
 		formData.add("client_id", clientId);
 		formData.add("client_secret", clientSecret);
@@ -46,21 +55,44 @@ public class KeycloakUserService {
 		formData.add("password", password);
 
 		HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(formData, headers);
+		try {
+			ResponseEntity<Map> response = restTemplate.exchange(tokenUrl, HttpMethod.POST, entity, Map.class);
 
-		ResponseEntity<Map> response = restTemplate.exchange(tokenUrl, HttpMethod.POST, entity, Map.class);
-
-		if (response.getStatusCode().is2xxSuccessful()) {
-			// Safe to return the map if the response is successful
+			// If successful, return the token map
 			return response.getBody();
-		} else {
-			// Provide better error logging/handling
-			throw new RuntimeException("Failed to get token from Keycloak. Status: " + response.getStatusCode());
+		} catch (HttpClientErrorException e) {
+
+			HttpStatus statusCode = (HttpStatus) e.getStatusCode();
+
+			// Check for 400 (Standard OIDC invalid_grant) OR 401 (Your Keycloak setup's
+			// response)
+			if (statusCode == HttpStatus.BAD_REQUEST || statusCode == HttpStatus.UNAUTHORIZED) {
+				String errorMessage = "Invalid username or password.";
+
+				try {
+					Map<String, String> errorMap = objectMapper.readValue(e.getResponseBodyAsString(), Map.class);
+
+					if ("invalid_grant".equals(errorMap.get("error")) || statusCode == HttpStatus.UNAUTHORIZED) {
+						throw new AuthenticationException(errorMessage);
+					}
+				} catch (JsonProcessingException | IllegalArgumentException ignored) {
+					if (statusCode == HttpStatus.UNAUTHORIZED) {
+						throw new AuthenticationException(errorMessage);
+					}
+				}
+				throw new AuthenticationException(errorMessage);
+
+			} else {
+				// Throw a general runtime error for other unhandled 4xx statuses (e.g., 404,
+				// 403)
+				throw new RuntimeException(
+						"Keycloak connection failed. Status: " + statusCode + ". Detail: " + e.getStatusText(), e);
+			}
 		}
 	}
 
 	public String getAdminToken() {
 		String tokenUrl = keycloakServerUrl + "/realms/" + realm + "/protocol/openid-connect/token";
-		RestTemplate restTemplate = new RestTemplate();
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
@@ -72,7 +104,7 @@ public class KeycloakUserService {
 //		formData.add("password", "admin");
 
 		HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(formData, headers);
-
+		RestTemplate restTemplate = new RestTemplate();
 		ResponseEntity<Map> response = restTemplate.exchange(tokenUrl, HttpMethod.POST, entity, Map.class);
 		Map<String, Object> responseBody;
 		if (response.getStatusCode().is2xxSuccessful()) {
@@ -153,7 +185,8 @@ public class KeycloakUserService {
 		Map<String, Object> userRepresentation = new HashMap<>();
 
 		// Core Fields
-		userRepresentation.put("username", request.username());
+		userRepresentation.put("firstName", request.firstName());
+		userRepresentation.put("lastName", request.lastName());
 		userRepresentation.put("email", request.email());
 		userRepresentation.put("enabled", true);
 		userRepresentation.put("credentials", List.of(credential));
@@ -185,6 +218,39 @@ public class KeycloakUserService {
 
 		new RestTemplate().exchange(roleMappingUrl, HttpMethod.POST, roleEntity, Void.class);
 		// You must handle any failure here too!
+	}
+
+	// KeycloakUserService.java
+
+	/**
+	 * Exchanges an expired Refresh Token for a new Access Token from Keycloak.
+	 */
+	public Map<String, Object> refreshToken(String refreshToken) {
+		String tokenUrl = keycloakServerUrl + "/realms/" + realm + "/protocol/openid-connect/token";
+		RestTemplate restTemplate = new RestTemplate();
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+		MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+		formData.add("client_id", clientId);
+		formData.add("client_secret", clientSecret);
+		formData.add("grant_type", "refresh_token");
+		formData.add("refresh_token", refreshToken); // The expired refresh token
+
+		HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(formData, headers);
+
+		try {
+			ResponseEntity<Map> response = restTemplate.exchange(tokenUrl, HttpMethod.POST, entity, Map.class);
+			return response.getBody();
+
+		} catch (HttpClientErrorException e) {
+			// Keycloak returns 400 Bad Request if the refresh token is expired or invalid.
+			if (e.getStatusCode() == HttpStatus.BAD_REQUEST || e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+				throw new AuthenticationException("Invalid or expired refresh token. Please log in again.");
+			}
+			throw new RuntimeException("Failed to refresh token from Keycloak. Status: " + e.getStatusCode(), e);
+		}
 	}
 
 }
