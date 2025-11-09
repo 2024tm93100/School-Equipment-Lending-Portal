@@ -185,7 +185,8 @@ public class KeycloakUserService {
 		Map<String, Object> userRepresentation = new HashMap<>();
 
 		// Core Fields
-		userRepresentation.put("username", request.username());
+		userRepresentation.put("firstName", request.firstName());
+		userRepresentation.put("lastName", request.lastName());
 		userRepresentation.put("email", request.email());
 		userRepresentation.put("enabled", true);
 		userRepresentation.put("credentials", List.of(credential));

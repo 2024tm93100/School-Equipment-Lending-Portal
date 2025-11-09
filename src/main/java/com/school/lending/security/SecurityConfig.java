@@ -8,6 +8,8 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.header.writers.frameoptions.XFrameOptionsHeaderWriter;
 
+import org.springframework.http.HttpMethod;
+
 @Configuration
 public class SecurityConfig {
 
@@ -30,12 +32,13 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						// Allow public pages and H2 console
 						.requestMatchers("/", "/error", "/public/**", "/h2-console/**", "/v3/api-docs/**",
-								"/swagger-ui/**", "/swagger-ui.html")
-						.permitAll().requestMatchers("/api/auth/**").permitAll()
+								"/swagger-ui/**", "/swagger-ui.html").permitAll()
+						.requestMatchers("/api/auth/**").permitAll()
+						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 						// Role-based API restrictions
-						.requestMatchers("/api/admin/**").hasRole("ADMIN").requestMatchers("/api/staff/**")
-						.hasAnyRole("STAFF", "ADMIN").requestMatchers("/api/student/**")
-						.hasAnyRole("STUDENT", "STAFF", "ADMIN")
+						.requestMatchers("/api/admin/**","/api/aanalytics/**").hasRole("ADMIN")
+						.requestMatchers("/api/staff/**").hasAnyRole("STAFF", "ADMIN")
+						.requestMatchers("/api/student/**", "/api/users/**").hasAnyRole("STUDENT", "STAFF", "ADMIN")
 						// All other requests must be authenticated
 						.anyRequest().authenticated())
 

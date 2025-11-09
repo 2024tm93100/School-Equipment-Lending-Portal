@@ -11,22 +11,27 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.school.lending.dto.BorrowRequestDto;
+import com.school.lending.dto.BorrowRequestResponseDto;
 import com.school.lending.exception.ResourceNotFoundException;
 import com.school.lending.model.BorrowRequest;
+import com.school.lending.model.RequestStatus;
 import com.school.lending.service.BorrowRequestService;
 
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api")
-@RequiredArgsConstructor
 public class BorrowRequestController {
 
-	private BorrowRequestService borrowRequestService;
+	private final BorrowRequestService borrowRequestService;
+
+	public BorrowRequestController(BorrowRequestService borrowRequestService) {
+		this.borrowRequestService = borrowRequestService;
+	}
 
 	@GetMapping("/requests")
 	@PreAuthorize("hasAnyRole('STUDENT', 'STAFF', 'ADMIN')")
@@ -48,9 +53,24 @@ public class BorrowRequestController {
 
 	@GetMapping("/requests/user/{userId}")
 	@PreAuthorize("hasAnyRole('STUDENT', 'STAFF', 'ADMIN')")
-	public ResponseEntity<List<BorrowRequest>> getRequestByUserId(@PathVariable Long userId) {
-		List<BorrowRequest> requestList = borrowRequestService.getAllRequestOfUser(userId);
+	public ResponseEntity<List<BorrowRequestResponseDto>> getRequestByUserId(@PathVariable Long userId) {
+		List<BorrowRequestResponseDto> requestList = borrowRequestService.getAllRequestOfUser(userId);
 		return ResponseEntity.ok(requestList);
+	}
+
+	@GetMapping("/requests/user")
+	@PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+	public ResponseEntity<List<BorrowRequestResponseDto>> getRequestByUserId(@RequestParam(name = "status", required = false) String status) {
+		// If status is not provided or null, you might return all requests, 
+        // but for safety, we often default to PENDING for staff/admin views.
+        String filterStatus = status != null ? status : "pending";
+		RequestStatus requestStatus = RequestStatus.valueOf(filterStatus.toUpperCase());
+        
+        List<BorrowRequestResponseDto> requests = borrowRequestService.getRequestsByStatus(requestStatus);
+        
+        // If the list is empty, return 204 No Content or 200 OK with an empty list.
+        // Returning 200 OK with an empty list is generally easier for frontend consumption.
+        return ResponseEntity.ok(requests);
 	}
 
 	@PostMapping("/requests")

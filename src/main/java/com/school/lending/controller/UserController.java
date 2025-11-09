@@ -1,9 +1,14 @@
 package com.school.lending.controller;
 
+import java.security.Principal;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,10 +20,15 @@ import com.school.lending.dto.LoginRequest;
 import com.school.lending.dto.RegisterRequest;
 import com.school.lending.dto.TokenRefreshRequest;
 import com.school.lending.dto.TokenRefreshResponse;
+import com.school.lending.dto.UserResponseDto;
+import com.school.lending.exception.ResourceNotFoundException;
+import com.school.lending.model.User;
 import com.school.lending.service.KeycloakUserService;
 import com.school.lending.service.UserService;
 
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 @RestController
 @RequestMapping("/api")
@@ -48,7 +58,8 @@ public class UserController {
 
 	@PostMapping("/auth/login")
 	public ResponseEntity<Map<String, Object>> autheticateUser(@RequestBody LoginRequest request) {
-		Map<String, Object> token = keycloakAuthService.getToken(request.username(), request.password());
+		String email = request.email();
+		Map<String, Object> token = keycloakAuthService.getToken(email, request.password());
 		return ResponseEntity.ok(token);
 	}
 
@@ -86,4 +97,52 @@ public class UserController {
 			return ResponseEntity.status(500).body("User registration failed: " + e.getMessage());
 		}
 	}
+
+	// 💡 Frontend expects the GET /users/me endpoint
+    @GetMapping("/users/me")
+    public Map<String, Object> getUserDetails(Principal principal) {
+        // 1. Get the authenticated JWT object from the Security Context
+        Object principalObject = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if (principalObject instanceof Jwt jwt) {
+            String email = jwt.getClaimAsString("email");
+            // 2. Extract application claims from the JWT payload
+            Map<String, Object> userDetails = new HashMap<>();
+			User user = userService.getUserByEmail(email).orElseThrow(() -> new ResourceNotFoundException("Equipment not found with ID: " + email));
+			userDetails.put("id", user.getUserId());
+			userDetails.put("firstName", user.getFirstName());
+			userDetails.put("lastName", user.getLastName());
+            // The 'sub' (subject) claim is the unique user ID from Keycloak
+            userDetails.put("keyCloakId", jwt.getClaimAsString("sub")); 
+            
+            // The 'preferred_username' is the username/staff ID
+            userDetails.put("uuid", principal.getName());
+            // The 'email' claim is usually available
+            userDetails.put("email", email);
+			userDetails.put("preferred_username", jwt.getClaimAsString("preferred_username"));
+            userDetails.put("name", jwt.getClaimAsString("name")); 
+            userDetails.put("firstName", jwt.getClaimAsString("given_name"));
+            userDetails.put("lastName", jwt.getClaimAsString("family_name"));
+            // Add the role that was previously determined and stored (e.g., from the token logic)
+            // Assuming you have a way to retrieve the single application role (e.g., "STAFF")
+            // This is crucial for your frontend logic!
+            Map<String,Object> realmAccess = jwt.getClaimAsMap("realm_access");
+            List<String> roles = realmAccess != null ? (List<String>) realmAccess.get("roles") : List.of();
+            
+            // 3. Find and add the application role (ADMIN, STAFF, or STUDENT)
+            String appRole = roles.stream()
+                .filter(r -> r.equals("ADMIN") || r.equals("STAFF") || r.equals("STUDENT"))
+                .findFirst()
+                .orElse("STUDENT"); // Default to STUDENT if none found
+
+            userDetails.put("role", appRole);
+            return userDetails;
+        }
+
+        // Fallback for non-JWT authentication
+        Map<String, Object> fallback = new HashMap<>();
+        fallback.put("preferred_username", principal.getName());
+        return fallback;
+    }
+	
 }

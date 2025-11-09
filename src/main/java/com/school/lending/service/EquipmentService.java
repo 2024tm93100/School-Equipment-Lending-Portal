@@ -14,6 +14,7 @@ import com.school.lending.exception.ResourceNotFoundException;
 import com.school.lending.model.Equipment;
 import com.school.lending.repository.EquipmentRepository;
 
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
 @Service
@@ -106,5 +107,59 @@ public class EquipmentService {
 		// Calls the custom repository method
 		return equipmentRepository.findByCategory(categoryName);
 	}
+
+    /**
+     * Handles inventory adjustment when a borrow request is APPROVED.
+     * Decrements available stock and increments borrowed count.
+     * * @param equipment The Equipment entity being borrowed.
+     * @param quantity The quantity being requested/approved.
+     */
+    @Transactional
+    public void approveRequest(Equipment equipment, int quantity) {
+        
+        int currentAvailable = equipment.getAvailableQuantity();
+
+        // 1. Critical Validation: Ensure stock hasn't dropped since the request was created.
+        if (quantity > currentAvailable) {
+            throw new InvalidInputException(
+                "Cannot approve request. Requested quantity (" + quantity + 
+                ") exceeds current available stock (" + currentAvailable + 
+                ") for equipment: " + equipment.getName());
+        }
+
+        // 2. Update Inventory
+        equipment.setAvailableQuantity(currentAvailable - quantity);
+        equipment.setBorrowedCount(equipment.getBorrowedCount() + quantity);
+
+        // 3. Save changes
+        equipmentRepository.save(equipment);
+    }
+
+    /**
+     * Handles inventory adjustment when a borrowed item is RETURNED.
+     * Increments available stock and decrements borrowed count.
+     * * @param equipment The Equipment entity being returned.
+     * @param quantity The quantity being returned.
+     */
+    @Transactional
+    public void returnRequest(Equipment equipment, int quantity) {
+        
+        int currentBorrowed = equipment.getBorrowedCount();
+        
+        // 1. Validation: Ensure we don't return more than what is currently marked as borrowed.
+        if (quantity > currentBorrowed) {
+            throw new InvalidInputException(
+                "Cannot complete return. Quantity being returned (" + quantity + 
+                ") exceeds currently marked borrowed quantity (" + currentBorrowed + 
+                ") for equipment: " + equipment.getName());
+        }
+
+        // 2. Update Inventory
+        equipment.setAvailableQuantity(equipment.getAvailableQuantity() + quantity);
+        equipment.setBorrowedCount(currentBorrowed - quantity);
+
+        // 3. Save changes
+        equipmentRepository.save(equipment);
+    }
 
 }
