@@ -36,7 +36,7 @@ public class SecurityConfig {
 						.requestMatchers("/api/auth/**").permitAll()
 						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 						// Role-based API restrictions
-						.requestMatchers("/api/admin/**","/api/aanalytics/**").hasRole("ADMIN")
+						.requestMatchers("/api/admin/**","/api/analytics/**").hasRole("ADMIN")
 						.requestMatchers("/api/staff/**").hasAnyRole("STAFF", "ADMIN")
 						.requestMatchers("/api/student/**", "/api/users/**").hasAnyRole("STUDENT", "STAFF", "ADMIN")
 						// All other requests must be authenticated
